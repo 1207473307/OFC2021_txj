@@ -57,6 +57,7 @@ class GCNLayer(nn.Module):
         super(GCNLayer, self).__init__()
         self.in_feats = in_feats
         self.linear = nn.Linear(in_feats, out_feats)
+
         self.device = device
 
     def forward(self, g, inputs):
@@ -94,6 +95,8 @@ class Net(nn.Module):
         self.out_dim = out_dim
         #self.in_feats = s_dim
         self.activation = torch.nn.LeakyReLU(negative_slope=0.01, inplace=False)
+
+
         self.device = device
         #self.activation = torch.nn.PReLU(num_parameters=1,init=0.25)
 

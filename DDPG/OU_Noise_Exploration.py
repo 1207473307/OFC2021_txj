@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import copy
+import torch
 
 class OU_Noise(object):
     """Ornstein-Uhlenbeck process."""
@@ -39,17 +40,21 @@ class Base_Exploration_Strategy(object):
         """Resets the noise process"""
         raise ValueError("Must be implemented")
 
+
 class OU_Noise_Exploration(Base_Exploration_Strategy):
     """Ornstein-Uhlenbeck noise process exploration strategy"""
     def __init__(self, config):
         super().__init__(config)
         self.noise = OU_Noise(self.config.action_size, self.config.seed, self.config.hyperparameters["mu"],
                               self.config.hyperparameters["theta"], self.config.hyperparameters["sigma"])
+        self.device = config.device
 
     def perturb_action_for_exploration_purposes(self, action_info):
         """Perturbs the action of the agent to encourage exploration"""
-        action = action_info["action"]
-        action += self.noise.sample()
+        action = action_info["action"].float()
+        n = torch.tensor(self.noise.sample()).to(self.device)
+        action += n
+        # action += torch.tensor(self.noise.sample()).to(self.device)
         return action
 
     def add_exploration_rewards(self, reward_info):

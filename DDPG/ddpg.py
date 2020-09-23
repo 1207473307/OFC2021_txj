@@ -7,6 +7,7 @@ from DDPG.OU_Noise_Exploration import OU_Noise_Exploration
 from DDPG.GNN import Net
 import numpy as np
 import visdom
+import time
 
 class DDPG(Base_Agent):
     """A DDPG Agent"""
@@ -22,7 +23,7 @@ class DDPG(Base_Agent):
         Base_Agent.copy_model_over(self.critic_local, self.critic_target)
 
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(),
-                                           lr=self.hyperparameters["Critic"]["learning_rate"], eps=1e-4)
+                                           lr=self.hyperparameters["Critic"]["learning_rate"], eps=1e-4)#.to(self.device)
         self.memory = Replay_Buffer(self.hyperparameters["Critic"]["buffer_size"], self.hyperparameters["batch_size"],
                                     self.config.seed)
         # self.actor_local = self.create_NN(input_dim=self.state_size, output_dim=self.action_size, key_to_use="Actor")
@@ -31,7 +32,7 @@ class DDPG(Base_Agent):
         self.actor_target = Net(config.state_dim_1, config.state_dim_2, config.hidden_size, config.action_dim, device=self.device).to(self.device)
         Base_Agent.copy_model_over(self.actor_local, self.actor_target)
         self.actor_optimizer = optim.Adam(self.actor_local.parameters(),
-                                          lr=self.hyperparameters["Actor"]["learning_rate"], eps=1e-4)
+                                          lr=self.hyperparameters["Actor"]["learning_rate"], eps=1e-4)#.to(self.device)
         self.exploration_strategy = OU_Noise_Exploration(self.config)
 
         self.viz = visdom.Visdom()
@@ -66,16 +67,23 @@ class DDPG(Base_Agent):
     def learn(self):
         # if self.time_for_critic_and_actor_to_learn():
         #for _ in range(self.hyperparameters["learning_updates_per_learning_session"]):
+        print('start learning',time)
         states, actions, rewards, next_states, dones = self.sample_experiences()
+        # start time count
+        start = time.time()
         c_loss = self.critic_learn(states, actions, rewards, next_states, dones)
         a_loss = self.actor_learn(states)
         self.global_step_number += 1
+        # end time count
+        end = time.time()
+        time_slot = end - start
+        print("Training times: {}".format(time_slot))
 
         self.viz.line(Y=[c_loss.detach().cpu().numpy()], X=[self.global_step_number], win='c_loss', update='append', opts=dict(title='c_loss', legend=['c_loss']))
         self.viz.line(Y=[a_loss.detach().cpu().numpy()], X=[self.global_step_number], win='a_loss', update='append', opts=dict(title='a_loss', legend=['a_loss']))
         self.viz.line(Y=[torch.mean(rewards).cpu().numpy()], X=[self.global_step_number], win='reward', update='append', opts=dict(title='reward', legend=['reward']))
         self.viz.line(Y=[self.sta_0_1(actions)], X=[self.global_step_number], win='action', update='append', opts=dict(title='action', legend=['0', '1']))
-
+        print('global_step:', self.global_step_number, time)
     def sample_experiences(self):
         return self.memory.sample()
 
@@ -86,7 +94,7 @@ class DDPG(Base_Agent):
         probs = functional.softmax(probs, dim=0)
         prob, act_id = torch.topk(probs, 1, dim=0)
         action = act_id
-        #action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
+        action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
         if action >= 0.5:
             return 1
         else:
@@ -99,7 +107,7 @@ class DDPG(Base_Agent):
         probs = functional.softmax(probs, dim=0)
         prob, act_id = torch.topk(probs, 1, dim=0)
         action = act_id
-        #action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
+        action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
         if action >= 0.5:
             return 1
         else:

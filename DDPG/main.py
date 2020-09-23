@@ -57,7 +57,7 @@ config.hyperparameters = {
     "mu": 0.0,  # for O-H noise
     "theta": 0.15,  # for O-H noise
     "sigma": 0.2,  # for O-H noise
-    "action_noise_std": 0.2,  # for TD3
+    "action_noise_std": 0.2,  # fIntel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHzor TD3
     "action_noise_clipping_range": 0.5,  # for TD3
     "update_every_n_steps": 1,
     "learning_updates_per_learning_session": 1,

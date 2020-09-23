@@ -210,7 +210,7 @@ class Multicast_Env(object):
 
     def conduct(self, s, action):
         k1 = 1
-        k2 = 1
+        k2 = 0.5
         if action:
             l1, f1 = self.statistical()
             num_rerouting = self.Full_rearrangement(s)
@@ -271,7 +271,7 @@ class Multicast_Env(object):
                     state, action, reward, next_state, 0))
 
             num_request += 1
-            print(num_request)
+            #print(num_request)
             block = self.new_request()
             num_block += block
             ep_block += block
