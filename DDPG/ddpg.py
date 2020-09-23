@@ -17,8 +17,8 @@ class DDPG(Base_Agent):
         self.hyperparameters = config.hyperparameters
         # self.critic_local = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1, key_to_use="Critic")
         # self.critic_target = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1, key_to_use="Critic")
-        self.critic_local = Net(config.state_dim_1, config.state_dim_2, config.hidden_size, 1, action_dim=1)
-        self.critic_target = Net(config.state_dim_1, config.state_dim_2, config.hidden_size, 1, action_dim=1)
+        self.critic_local = Net(config.state_dim_1, config.state_dim_2, config.hidden_size, 1, action_dim=1, device=self.device).to(self.device)
+        self.critic_target = Net(config.state_dim_1, config.state_dim_2, config.hidden_size, 1, action_dim=1, device=self.device).to(self.device)
         Base_Agent.copy_model_over(self.critic_local, self.critic_target)
 
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(),
@@ -27,10 +27,9 @@ class DDPG(Base_Agent):
                                     self.config.seed)
         # self.actor_local = self.create_NN(input_dim=self.state_size, output_dim=self.action_size, key_to_use="Actor")
         # self.actor_target = self.create_NN(input_dim=self.state_size, output_dim=self.action_size, key_to_use="Actor")
-        self.actor_local = Net(config.state_dim_1, config.state_dim_2, config.hidden_size, config.action_dim)
-        self.actor_target = Net(config.state_dim_1, config.state_dim_2, config.hidden_size, config.action_dim)
+        self.actor_local = Net(config.state_dim_1, config.state_dim_2, config.hidden_size, config.action_dim, device=self.device).to(self.device)
+        self.actor_target = Net(config.state_dim_1, config.state_dim_2, config.hidden_size, config.action_dim, device=self.device).to(self.device)
         Base_Agent.copy_model_over(self.actor_local, self.actor_target)
-
         self.actor_optimizer = optim.Adam(self.actor_local.parameters(),
                                           lr=self.hyperparameters["Actor"]["learning_rate"], eps=1e-4)
         self.exploration_strategy = OU_Noise_Exploration(self.config)
@@ -72,9 +71,9 @@ class DDPG(Base_Agent):
         a_loss = self.actor_learn(states)
         self.global_step_number += 1
 
-        self.viz.line(Y=[c_loss.detach().numpy()], X=[self.global_step_number], win='c_loss', update='append', opts=dict(title='c_loss', legend=['c_loss']))
-        self.viz.line(Y=[a_loss.detach().numpy()], X=[self.global_step_number], win='a_loss', update='append', opts=dict(title='a_loss', legend=['a_loss']))
-        self.viz.line(Y=[torch.mean(rewards)], X=[self.global_step_number], win='reward', update='append', opts=dict(title='reward', legend=['reward']))
+        self.viz.line(Y=[c_loss.detach().cpu().numpy()], X=[self.global_step_number], win='c_loss', update='append', opts=dict(title='c_loss', legend=['c_loss']))
+        self.viz.line(Y=[a_loss.detach().cpu().numpy()], X=[self.global_step_number], win='a_loss', update='append', opts=dict(title='a_loss', legend=['a_loss']))
+        self.viz.line(Y=[torch.mean(rewards).cpu().numpy()], X=[self.global_step_number], win='reward', update='append', opts=dict(title='reward', legend=['reward']))
         self.viz.line(Y=[self.sta_0_1(actions)], X=[self.global_step_number], win='action', update='append', opts=dict(title='action', legend=['0', '1']))
 
     def sample_experiences(self):
@@ -87,7 +86,7 @@ class DDPG(Base_Agent):
         probs = functional.softmax(probs, dim=0)
         prob, act_id = torch.topk(probs, 1, dim=0)
         action = act_id
-        action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
+        #action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
         if action >= 0.5:
             return 1
         else:
@@ -100,11 +99,12 @@ class DDPG(Base_Agent):
         probs = functional.softmax(probs, dim=0)
         prob, act_id = torch.topk(probs, 1, dim=0)
         action = act_id
-        action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
+        #action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
         if action >= 0.5:
             return 1
         else:
             return 0
+
 
     def pick_action(self, state=None):
         """Picks an action using the actor network and then adds some noise to it to ensure exploration"""
@@ -147,9 +147,10 @@ class DDPG(Base_Agent):
             critic_targets_next = []
             for next_s in next_states:
                 #actions_next = self.actor_target(next_s)
-                actions_next = torch.tensor(self.get_action_target(next_s)).unsqueeze(0)
+                actions_next = torch.tensor(self.get_action_target(next_s)).unsqueeze(0).to(self.device)
                 critic_targets_next.append(self.critic_target(next_s, action=actions_next))
-            critic_targets_next = torch.from_numpy(np.vstack(critic_targets_next))
+            #critic_targets_next = torch.from_numpy(np.vstack(critic_targets_next))
+            critic_targets_next = torch.cat(critic_targets_next).unsqueeze(1)
 
         return critic_targets_next
 
@@ -191,7 +192,7 @@ class DDPG(Base_Agent):
         # actor_loss = -self.critic_local(torch.cat((states, actions_pred), 1)).mean()
         actor_loss = []
         for s in states:
-            action_pred = torch.tensor(self.get_action(s)).unsqueeze(0)
+            action_pred = torch.tensor(self.get_action(s)).unsqueeze(0).to(self.device)
             actor_loss.append(-self.critic_local(s, action=action_pred))
         actor_loss = torch.cat(actor_loss).mean()
         return actor_loss

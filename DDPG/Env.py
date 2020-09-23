@@ -32,8 +32,9 @@ class Multicast_Env(object):
         self.episodes = config.num_episodes_to_run
         #self.ep = 0
         # self.batch_size = batch_size
-        self.path_map = np.load('E:\OFC2021\path_map.npy', allow_pickle=True)
-        self.K_path_map = np.load('E:\OFC2021\K_path_map.npy', allow_pickle=True)
+        self.path_map = np.load(config.path + 'path_map.npy', allow_pickle=True)
+        self.K_path_map = np.load(config.path + 'K_path_map.npy', allow_pickle=True)
+        self.device = config.device
 
     def random_request(self):
         source = random.randint(0, 13)
@@ -250,7 +251,7 @@ class Multicast_Env(object):
                 for i in range(len(self.service_list)):
                     # g = data_set(self.service_list[i], self.G)
                     # inputs = g.edata['feat']
-                    state = data_set_2(self.service_list[i], self.G)
+                    state = data_set_2(self.service_list[i], self.G, self.device)
 
                     #buffer_s.append([g1, inputs1, g2, inputs2])
                     #action = self.agent.pick_action(state)
@@ -258,14 +259,16 @@ class Multicast_Env(object):
                     reward, num_r = self.conduct(i, action)
                     #num_rerouting += num_r
                     num_rerouting_ep += num_r
-                    next_state = data_set_2(self.service_list[i], self.G)
+                    next_state = data_set_2(self.service_list[i], self.G, self.device)
 
                     # r_a.append(action.numpy())
                     # r_s.append(edge_state)
                     #r_s.append([self.service_list[i][1:3]])
                     # buffer_a.append(action)
                     # buffer_r.append(reward)
-                    self.agent.save_experience(self.agent.memory, experience=(state, action, reward, next_state, 0))
+                    #self.agent.save_experience(self.agent.memory, experience=(state, action.to(self.device), torch.tensor(reward).to(self.device), next_state, torch.tensor(0)))
+                    self.agent.save_experience(self.agent.memory, experience=(
+                    state, action, reward, next_state, 0))
 
             num_request += 1
             print(num_request)

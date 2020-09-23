@@ -4,6 +4,8 @@ from DDPG.ddpg import DDPG
 from DDPG.Config import Config
 from DDPG.Env import Multicast_Env
 from Net_Graph import G
+import torch
+
 config = Config()
 config.seed = 0
 config.environment = Multicast_Env
@@ -15,7 +17,7 @@ config.visualise_individual_results = False
 config.visualise_overall_agent_results = True
 config.standard_deviation_results = 1.0
 config.runs_per_agent = 1
-config.use_GPU = False
+config.use_GPU = torch.cuda.is_available()
 config.overwrite_existing_results_file = False
 config.randomise_random_seed = True
 config.save_model = False
@@ -26,6 +28,8 @@ config.state_dim_2 = 2
 config.action_dim = 2
 config.hidden_size = 128
 config.action_size = 1
+config.path = path = '/home/txj/OFC2021/OFC2021_txj/'
+config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 config.hyperparameters = {

@@ -38,7 +38,7 @@ class Base_Agent(object):
         self.max_rolling_score_seen = float("-inf")
         self.max_episode_score_seen = float("-inf")
         self.episode_number = 0
-        self.device = "cuda:0" if config.use_GPU else "cpu"
+        self.device = config.device
         self.visualise_results_boolean = config.visualise_individual_results
         self.global_step_number = 0
         self.turn_off_exploration = False

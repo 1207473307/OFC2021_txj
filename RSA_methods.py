@@ -1,11 +1,11 @@
 import Net_Graph as NG
 import numpy as np
 import math
+path = '/home/txj/OFC2021/OFC2021_txj/'
+path_map = np.load(path+'path_map.npy', allow_pickle=True)
+K_path_map = np.load(path + 'K_path_map.npy', allow_pickle=True)
 
-path_map = np.load('E:\OFC2021\path_map.npy', allow_pickle=True)
-K_path_map = np.load('E:\OFC2021\K_path_map.npy', allow_pickle=True)
-
-def updata_fs(G, path, len_fs: int, start_f: int):
+def updata_fs(G, path, len_fs, start_f):
     if len(path) <= 1:
         return
     for i in range(len_fs):
@@ -13,7 +13,7 @@ def updata_fs(G, path, len_fs: int, start_f: int):
             G[path[j]][path[j + 1]]['fs'][start_f + i] = 0
 
 
-def release_fs(G, path, len_fs: int, start_f: int):
+def release_fs(G, path, len_fs, start_f):
     if len(path) <= 1:
         return
     for i in range(len_fs):

@@ -50,12 +50,12 @@ def get_edge_features_2(G, path_tree):
     return edge_feature
 
 def creat_g(edge_list):
-    g = dgl.DGLGraph()
-    g.add_nodes(14)
-
-    for src, dst in edge_list:
-        g.add_edges(src, dst)
-    #g = dgl.DGLGraph(edge_list)
+    # g = dgl.DGLGraph()
+    # g.add_nodes(14)
+    #
+    # for src, dst in edge_list:
+    #     g.add_edges(src, dst)
+    g = dgl.graph(edge_list)
 
 
     return g
@@ -94,12 +94,13 @@ def data_set(service, G):
     g.edata['feat'] = torch.tensor(edge_features, dtype=torch.float)
     return g
 
-def data_set_2(service, G):
+def data_set_2(service, G, device):
     path_tree, source, destination, bandwidth, time = service
-    g1 = creat_g(edge_list)
+    g1 = creat_g(edge_list)#.to(device)
+
     edge_features1 = get_edge_features(G)
     g1.edata['feat'] = torch.tensor(edge_features1, dtype=torch.float)
-
+    g1 = g1.to(device)
     # edge_list2, edge_features2 = [], []
     # for path, len_fs, start_f in path_tree:
     #     for i in range(len(path) - 1):
@@ -109,5 +110,5 @@ def data_set_2(service, G):
     g2 = creat_g(edge_list)
     edge_features2 = get_edge_features_2(G, path_tree)
     g2.edata['feat'] = torch.tensor(edge_features2, dtype=torch.float)
-
+    g2 = g2.to(device)
     return [g1, g1.edata['feat'], g2, g2.edata['feat']]
