@@ -32,8 +32,8 @@ class Multicast_Env(object):
         self.episodes = config.num_episodes_to_run
         #self.ep = 0
         # self.batch_size = batch_size
-        self.path_map = np.load(config.path + 'path_map.npy', allow_pickle=True)
-        self.K_path_map = np.load(config.path + 'K_path_map.npy', allow_pickle=True)
+        self.path_map = np.load(config.path + '/path_map.npy', allow_pickle=True)
+        self.K_path_map = np.load(config.path + '/K_path_map.npy', allow_pickle=True)
         self.device = config.device
 
     def random_request(self):
@@ -213,7 +213,10 @@ class Multicast_Env(object):
         k2 = 0.5
         if action:
             l1, f1 = self.statistical()
+            start = time.time()
             num_rerouting = self.Full_rearrangement(s)
+            end = time.time()
+            print("time for full rearrangement:", format(end - start))
             l2, f2 = self.statistical()
             if num_rerouting == 0 :
                 return 0, 0
@@ -253,26 +256,31 @@ class Multicast_Env(object):
                     # inputs = g.edata['feat']
                     state = data_set_2(self.service_list[i], self.G, self.device)
 
-                    #buffer_s.append([g1, inputs1, g2, inputs2])
-                    #action = self.agent.pick_action(state)
+                    # buffer_s.append([g1, inputs1, g2, inputs2])
+                    # action = self.agent.pick_action(state)
+                    start = time.time()
                     action = self.agent.get_action(state)
+                    end = time.time()
+                    print("time for state_to_action:", format(end - start))
                     reward, num_r = self.conduct(i, action)
-                    #num_rerouting += num_r
+                    # num_rerouting += num_r
                     num_rerouting_ep += num_r
                     next_state = data_set_2(self.service_list[i], self.G, self.device)
 
                     # r_a.append(action.numpy())
                     # r_s.append(edge_state)
-                    #r_s.append([self.service_list[i][1:3]])
+                    # r_s.append([self.service_list[i][1:3]])
                     # buffer_a.append(action)
                     # buffer_r.append(reward)
-                    #self.agent.save_experience(self.agent.memory, experience=(state, action.to(self.device), torch.tensor(reward).to(self.device), next_state, torch.tensor(0)))
-                    self.agent.save_experience(self.agent.memory, experience=(
-                    state, action, reward, next_state, 0))
+                    # self.agent.save_experience(self.agent.memory, experience=(state, action.to(self.device), torch.tensor(reward).to(self.device), next_state, torch.tensor(0)))
+                    self.agent.save_experience(self.agent.memory, experience=(state, action, reward, next_state, 0))
 
             num_request += 1
             #print(num_request)
+            start = time.time()
             block = self.new_request()
+            end = time.time()
+            print("time for server a request:",format(end - start))
             num_block += block
             ep_block += block
 

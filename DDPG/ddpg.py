@@ -67,7 +67,7 @@ class DDPG(Base_Agent):
     def learn(self):
         # if self.time_for_critic_and_actor_to_learn():
         #for _ in range(self.hyperparameters["learning_updates_per_learning_session"]):
-        print('start learning',time)
+        #print('start learning',time)
         states, actions, rewards, next_states, dones = self.sample_experiences()
         # start time count
         start = time.time()
@@ -83,7 +83,7 @@ class DDPG(Base_Agent):
         self.viz.line(Y=[a_loss.detach().cpu().numpy()], X=[self.global_step_number], win='a_loss', update='append', opts=dict(title='a_loss', legend=['a_loss']))
         self.viz.line(Y=[torch.mean(rewards).cpu().numpy()], X=[self.global_step_number], win='reward', update='append', opts=dict(title='reward', legend=['reward']))
         self.viz.line(Y=[self.sta_0_1(actions)], X=[self.global_step_number], win='action', update='append', opts=dict(title='action', legend=['0', '1']))
-        print('global_step:', self.global_step_number, time)
+        #print('global_step:', self.global_step_number, time)
     def sample_experiences(self):
         return self.memory.sample()
 

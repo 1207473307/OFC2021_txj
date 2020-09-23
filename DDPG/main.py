@@ -28,7 +28,7 @@ config.state_dim_2 = 2
 config.action_dim = 2
 config.hidden_size = 128
 config.action_size = 1
-config.path = path = '/home/txj/OFC2021/OFC2021_txj/'
+config.path = path = '/home/txj/OFC2021/OFC2021_txj'
 config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
