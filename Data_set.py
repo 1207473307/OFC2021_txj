@@ -33,20 +33,24 @@ def get_edge_features(G):
                 flag = 0
         if num == 0:
             #edge_feature.append([0, 0, fist_avaliable, 0])
-            edge_feature.append([0, 0, fist_avaliable])  # 防止出现除数为0
-            # return [0,0]
+            # edge_feature.append([0, 0, fist_avaliable])  # 防止出现除数为0
+            #edge_feature.append([0, 0])
+            edge_feature.append([0])
         else:
             #edge_feature.append([num, num / block, fist_avaliable, 0])
-            edge_feature.append([num, num / block, fist_avaliable])
+            #edge_feature.append([num, num / block, fist_avaliable])
+            #edge_feature.append([num, num / block])
+            edge_feature.append([num])
     return edge_feature
     # return [[0] for i in range(44)]
 
 def get_edge_features_2(G, path_tree):
-    edge_feature = [[0, 0] for i in range(len(edge_list))]
+    # edge_feature = [[0, 0] for i in range(len(edge_list))]
+    edge_feature = [[0] for i in range(len(edge_list))]
     for path, len_fs, start_f in path_tree:
         for i in range(len(path) - 1):
-            edge_feature[edge_list.index((path[i],path[i+1]))] = [len_fs, start_f]
-
+            # edge_feature[edge_list.index((path[i],path[i+1]))] = [len_fs, start_f]
+            edge_feature[edge_list.index((path[i], path[i + 1]))] = [len_fs]
     return edge_feature
 
 def creat_g(edge_list):

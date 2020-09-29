@@ -8,6 +8,9 @@ from DDPG.GNN import Net
 import numpy as np
 import visdom
 import time
+import datetime
+import os
+
 
 class DDPG(Base_Agent):
     """A DDPG Agent"""
@@ -34,6 +37,8 @@ class DDPG(Base_Agent):
         self.actor_optimizer = optim.Adam(self.actor_local.parameters(),
                                           lr=self.hyperparameters["Actor"]["learning_rate"], eps=1e-4)#.to(self.device)
         self.exploration_strategy = OU_Noise_Exploration(self.config)
+        self.model_path = config.model_path
+        self.test = config.test
 
         self.viz = visdom.Visdom()
 
@@ -77,13 +82,13 @@ class DDPG(Base_Agent):
         # end time count
         end = time.time()
         time_slot = end - start
-        print("Training times: {}".format(time_slot))
+        #print("Training times: {}".format(time_slot))
 
         self.viz.line(Y=[c_loss.detach().cpu().numpy()], X=[self.global_step_number], win='c_loss', update='append', opts=dict(title='c_loss', legend=['c_loss']))
         self.viz.line(Y=[a_loss.detach().cpu().numpy()], X=[self.global_step_number], win='a_loss', update='append', opts=dict(title='a_loss', legend=['a_loss']))
         self.viz.line(Y=[torch.mean(rewards).cpu().numpy()], X=[self.global_step_number], win='reward', update='append', opts=dict(title='reward', legend=['reward']))
         self.viz.line(Y=[self.sta_0_1(actions)], X=[self.global_step_number], win='action', update='append', opts=dict(title='action', legend=['0', '1']))
-        #print('global_step:', self.global_step_number, time)
+        print('global_step:', self.global_step_number, "Training times: {}".format(time_slot))
     def sample_experiences(self):
         return self.memory.sample()
 
@@ -92,26 +97,57 @@ class DDPG(Base_Agent):
             probs = self.actor_local(state)#.cpu().data.numpy()
         #self.actor_local.train()
         probs = functional.softmax(probs, dim=0)
-        prob, act_id = torch.topk(probs, 1, dim=0)
-        action = act_id
-        action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
-        if action >= 0.5:
-            return 1
+        print(probs)
+        if not self.test:
+            act_id = torch.multinomial(probs, 1)
         else:
-            return 0
+            prob, act_id = torch.topk(probs, 1, dim=0)
+        action = act_id
+
+        # self.actor_local.eval()
+        # with torch.no_grad():
+        #     action = self.actor_local(state).cpu().data.numpy()
+        #     print(action)
+        # if action >= 0:
+        #     action = 1.0
+        # else:
+        #     action = 0.0
+        # self.actor_local.train()
+
+        # if not self.test:
+        #     action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
+        # if action >= 0.5:
+        #     return 1
+        # else:
+        #     return 0
+        return action
 
     def get_action_target(self, state):
         with torch.no_grad():
             probs = self.actor_target(state)  # .cpu().data.numpy()
         # self.actor_local.train()
         probs = functional.softmax(probs, dim=0)
-        prob, act_id = torch.topk(probs, 1, dim=0)
-        action = act_id
-        action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
-        if action >= 0.5:
-            return 1
+        #print(probs)
+        if not self.test:
+            act_id = torch.multinomial(probs, 1)
         else:
-            return 0
+            prob, act_id = torch.topk(probs, 1, dim=0)
+        action = act_id
+
+        # with torch.no_grad():
+        #     action = self.actor_target(state).cpu().data.numpy()
+        # if action >= 0 :
+        #     action = 1
+        # else:
+        #     action = 0
+        return action
+
+
+        # action = self.exploration_strategy.perturb_action_for_exploration_purposes({"action": action})
+        # if action >= 0.5:
+        #     return 1
+        # else:
+        #     return 0
 
 
     def pick_action(self, state=None):
@@ -155,7 +191,7 @@ class DDPG(Base_Agent):
             critic_targets_next = []
             for next_s in next_states:
                 #actions_next = self.actor_target(next_s)
-                actions_next = torch.tensor(self.get_action_target(next_s)).unsqueeze(0).to(self.device)
+                actions_next = torch.tensor(self.get_action_target(next_s))# .unsqueeze(0).to(self.device)
                 critic_targets_next.append(self.critic_target(next_s, action=actions_next))
             #critic_targets_next = torch.from_numpy(np.vstack(critic_targets_next))
             critic_targets_next = torch.cat(critic_targets_next).unsqueeze(1)
@@ -200,7 +236,30 @@ class DDPG(Base_Agent):
         # actor_loss = -self.critic_local(torch.cat((states, actions_pred), 1)).mean()
         actor_loss = []
         for s in states:
-            action_pred = torch.tensor(self.get_action(s)).unsqueeze(0).to(self.device)
+            action_pred = torch.tensor(self.get_action(s))# .unsqueeze(0).to(self.device)
             actor_loss.append(-self.critic_local(s, action=action_pred))
         actor_loss = torch.cat(actor_loss).mean()
         return actor_loss
+
+    def save_model(self):
+        path = self.model_path + "/" + datetime.datetime.now().strftime("%m%d-%H%M%S") + "/"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        torch.save(self.actor_local.state_dict(), path + 'actor_local.pkl')
+        torch.save(self.actor_target.state_dict(), path + 'actor_target.pkl')
+        torch.save(self.critic_local.state_dict(), path + 'critic_local.pkl')
+        torch.save(self.critic_target.state_dict(), path + 'critic_target.pkl')
+
+
+    def load_model(self, path):
+
+        self.actor_local.load_state_dict(torch.load(path + 'actor_local.pkl'))
+        self.actor_target.load_state_dict(torch.load(path + 'actor_target.pkl'))
+        self.critic_local.load_state_dict(torch.load(path + 'critic_local.pkl'))
+        self.critic_target.load_state_dict(torch.load(path + 'critic_target.pkl'))
+        print('load success!')
+        # torch.load(self.actor_target, path + 'actor_target.pkl')
+        # torch.load(self.critic_local, path + 'critic_local.pkl')
+        # torch.load(self.critic_target, path + 'critic_target.pkl')
+
+

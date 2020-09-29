@@ -503,21 +503,22 @@ class RMSA():
                 time_to = round(np.random.exponential(30))
                 t += time_to
                 flag = self.release_request(time_to)
-                # if t >= 1000:
-                #     #num_rerouting += self.DTS_F()
-                #     num_rerouting += self.DTS_P()
-                #     #num_rerouting += self.QTS_F()
-                #     #num_rerouting += self.QTS_P()
-                #     t -= 1000
-                if flag == 1:   #rearrangement
-                    #pass
-                    num_rerouting += self.DTS_F()
+                if t >= 1000:
+                    #num_rerouting += self.DTS_F()
                     #num_rerouting += self.DTS_P()
                     #num_rerouting += self.QTS_F()
                     #num_rerouting += self.QTS_P()
-                    #num_rerouting += self.crowded_rearrangement()
-                    #self.DTS_A()
-                    #self.QTS_A()
+                    t -= 1000
+                # if flag == 1:   #rearrangement
+                #     #pass
+                #     print(len(self.service_list))
+                #     num_rerouting += self.DTS_F()
+                #     #num_rerouting += self.DTS_P()
+                #     #num_rerouting += self.QTS_F()
+                #     #num_rerouting += self.QTS_P()
+                #     #num_rerouting += self.crowded_rearrangement()
+                #     #self.DTS_A()
+                #     #self.QTS_A()
 
                 num_request += 1
                 #print(num_request)

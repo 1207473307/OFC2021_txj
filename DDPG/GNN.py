@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import random
 import numpy as np
 from Data_set import data_set,edge_list
+from torch.nn import init
 import os
 
 # os.environ["OMP_NUM_THREADS"] = "1"
@@ -34,6 +35,17 @@ torch.manual_seed(0)
 #                 state['exp_avg'].share_memory_()
 #                 state['exp_avg_sq'].share_memory_()
 
+#define the initial function to init the layer's parameters for the network
+def weigth_init(m):
+    if isinstance(m, nn.Conv2d):
+        init.xavier_uniform_(m.weight.data)
+        init.constant_(m.bias.data,0.1)
+    elif isinstance(m, nn.BatchNorm2d):
+        m.weight.data.fill_(1)
+        m.bias.data.zero_()
+    elif isinstance(m, nn.Linear):
+        m.weight.data.normal_(0,0.01)
+        m.bias.data.zero_()
 
 def gcn_message(edges):
     #msg = torch.mean(nodes.edges['h'])
@@ -57,6 +69,7 @@ class GCNLayer(nn.Module):
         super(GCNLayer, self).__init__()
         self.in_feats = in_feats
         self.linear = nn.Linear(in_feats, out_feats)
+        weigth_init(self.linear)
 
         self.device = device
 
@@ -65,21 +78,18 @@ class GCNLayer(nn.Module):
         #g.ndata['h'] = inputs
         g.edata['h'] = inputs
         for i in range(14):
-            # print(i)
-            # a = g.edges[g.in_edges(i)].data['h']
-            # a = torch.mean(a, dim=0)
-            # a = a.view(1, self.in_feats)
-            # g.nodes[i].data['h'] = a
             g.nodes[i].data['h'] = torch.mean(g.edges[g.in_edges(i)].data['h'], dim=0).view(1, self.in_feats)
 
-        #g.send_and_recv([i for i in range(44)], gcn_message, gcn_reduce)
+        g.send_and_recv([i for i in range(44)], gcn_message, gcn_reduce)
+
         g.update_all(gcn_message, gcn_reduce)
 
         # # 触发边的信息传递
         # g.send(g.edges(), gcn_message)
         # # 触发节点的聚合函数
         # g.recv(g.nodes(), gcn_reduce)
-        # 取得节点向量
+        # # 取得节点向量
+
         h = g.ndata.pop('h')
         for src, dst in edge_list:
             g.edges[src, dst].data['h'] = torch.mean(torch.index_select(h, dim=0, index=torch.tensor([src, dst]).to(self.device)), dim=0).view(1, self.in_feats)
@@ -95,6 +105,7 @@ class Net(nn.Module):
         self.out_dim = out_dim
         #self.in_feats = s_dim
         self.activation = torch.nn.LeakyReLU(negative_slope=0.01, inplace=False)
+        # self.activation = torch.nn.ReLU()
 
 
         self.device = device
@@ -105,6 +116,7 @@ class Net(nn.Module):
         self.a21 = GCNLayer(s_dim_2, hidden_size, self.device)
         self.a22 = GCNLayer(hidden_size, hidden_size, self.device)
         self.a3 = nn.Linear(hidden_size * 2 + action_dim, out_dim)
+        weigth_init(self.a3)
 
         # self.v11 = GCNLayer(s_dim_1, hidden_size)
         # self.v12 = GCNLayer(hidden_size, hidden_size)

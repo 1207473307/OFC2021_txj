@@ -51,7 +51,7 @@ class OU_Noise_Exploration(Base_Exploration_Strategy):
 
     def perturb_action_for_exploration_purposes(self, action_info):
         """Perturbs the action of the agent to encourage exploration"""
-        action = action_info["action"].float()
+        action = action_info["action"]#.float()
         n = torch.tensor(self.noise.sample()).to(self.device)
         action += n
         # action += torch.tensor(self.noise.sample()).to(self.device)

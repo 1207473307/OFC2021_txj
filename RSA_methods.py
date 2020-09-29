@@ -1,7 +1,8 @@
 import Net_Graph as NG
 import numpy as np
 import math
-path = '/home/txj/OFC2021/OFC2021_txj'
+#path = '/home/txj/OFC2021/OFC2021_txj'
+path = 'E:\OFC2021_txj'
 path_map = np.load(path+'/path_map.npy', allow_pickle=True)
 K_path_map = np.load(path + '/K_path_map.npy', allow_pickle=True)
 
